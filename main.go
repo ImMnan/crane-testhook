@@ -3,6 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 func main() {
@@ -22,7 +25,7 @@ func main() {
 	networkErr.networkCheckBlaze()
 	networkErr.networkCheckImageRegistry()
 	networkErr.networkCheckThirdParty()
-
+	listNodesDetails()
 	err := consolidation(&networkErr)
 	if err != nil {
 		fmt.Println("\n")
@@ -39,6 +42,19 @@ type StatusError struct {
 	BlazeNetworkStatus         []map[string]error
 	ImageRegistryNetworkStatus error
 	ThirdPartyNetworkStatus    []map[string]error
+}
+
+func getClientSet() *kubernetes.Clientset {
+	// Create a new Kubernetes client
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+	return clientset
 }
 
 func consolidation(statusErr *StatusError) error {

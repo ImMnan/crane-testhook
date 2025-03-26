@@ -10,7 +10,7 @@ import (
 
 func main() {
 
-	networkErr := StatusError{}
+	statusErr := StatusError{}
 	fmt.Println("Starting the requirements check...\n")
 	//config, err := rest.InClusterConfig()
 	//if err != nil {
@@ -22,11 +22,11 @@ func main() {
 	//}
 	//	wg.add(1)
 	//listNodesDetails(clientset)
-	networkErr.networkCheckBlaze()
-	networkErr.networkCheckImageRegistry()
-	networkErr.networkCheckThirdParty()
-	listNodesDetails()
-	err := consolidation(&networkErr)
+	statusErr.networkCheckBlaze()
+	statusErr.networkCheckImageRegistry()
+	statusErr.networkCheckThirdParty()
+	statusErr.listNodesDetails()
+	err := consolidation(&statusErr)
 	if err != nil {
 		fmt.Println("\n")
 		panic(err)
@@ -42,6 +42,7 @@ type StatusError struct {
 	BlazeNetworkStatus         []map[string]error
 	ImageRegistryNetworkStatus error
 	ThirdPartyNetworkStatus    []map[string]error
+	IngressAvailability        error
 }
 
 func getClientSet() *kubernetes.Clientset {

@@ -26,6 +26,7 @@ func main() {
 	statusErr.networkCheckImageRegistry()
 	statusErr.networkCheckThirdParty()
 	statusErr.listNodesDetails()
+	statusErr.checkIngress()
 	err := consolidation(&statusErr)
 	if err != nil {
 		fmt.Println("\n")

@@ -96,5 +96,9 @@ func consolidation(statusErr *StatusError) error {
 			}
 		}
 	}
+	// Check IngressAvailability
+	if statusErr.IngressAvailability != nil {
+		return errors.New("requirements check failed")
+	}
 	return nil
 }

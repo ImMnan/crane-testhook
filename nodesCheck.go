@@ -20,7 +20,6 @@ func (statusErr *StatusError) listNodesDetails() {
 		//fmt.Println(statusErr.NodeStatus)
 	}
 	for i, nd := range nodes.Items {
-
 		if nd.Status.Capacity.Cpu().MilliValue() <= 2000 {
 			statusErr.NodeResourceStatus = append(statusErr.NodeResourceStatus, map[string]error{fmt.Sprintf("cpu node %d", i): fmt.Errorf("insufficient %d", nd.Status.Capacity.Cpu().MilliValue())})
 			fmt.Printf("node %d insufficient cpu %d\n", i, nd.Status.Capacity.Cpu().MilliValue())

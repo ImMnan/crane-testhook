@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -26,10 +27,16 @@ func main() {
 	statusErr.networkCheckImageRegistry()
 	statusErr.networkCheckThirdParty()
 	statusErr.listNodesDetails()
-	statusErr.checkIngress()
+
+	ingressType := os.Getenv("KUBERNETES_WEB_EXPOSE_TYPE")
+	if ingressType != "" {
+		statusErr.checkIngress()
+	}
+	
+
 	err := consolidation(&statusErr)
 	if err != nil {
-		fmt.Println("\n")
+		//fmt.Println("\n")
 		panic(err)
 	}
 	fmt.Println("\nAll checks passed successfully")
@@ -43,7 +50,7 @@ type StatusError struct {
 	BlazeNetworkStatus         []map[string]error
 	ImageRegistryNetworkStatus error
 	ThirdPartyNetworkStatus    []map[string]error
-	IngressAvailability        error
+	IngressStatus              error
 }
 
 func getClientSet() *kubernetes.Clientset {
@@ -97,7 +104,7 @@ func consolidation(statusErr *StatusError) error {
 		}
 	}
 	// Check IngressAvailability
-	if statusErr.IngressAvailability != nil {
+	if statusErr.IngressStatus != nil {
 		return errors.New("requirements check failed")
 	}
 	return nil

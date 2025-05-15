@@ -7,8 +7,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (statusErr *StatusError) listNodesDetails() {
-	clientset := getClientSet()
+func (statusErr *StatusError) listNodesDetails(ck clientSet) {
+	clientset := ck.clientset
 	// Configure slog logger
 	//statusErr := &StatusError{}
 	//logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))

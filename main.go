@@ -12,7 +12,9 @@ import (
 func main() {
 
 	statusErr := StatusError{}
-	fmt.Println("Starting the requirements check...\n")
+	fmt.Println("Starting the requirements check...")
+	cs := &clientSet{}
+	cs.getClientSet()
 	//config, err := rest.InClusterConfig()
 	//if err != nil {
 	//	panic(err.Error())
@@ -26,13 +28,12 @@ func main() {
 	statusErr.networkCheckBlaze()
 	statusErr.networkCheckImageRegistry()
 	statusErr.networkCheckThirdParty()
-	statusErr.listNodesDetails()
+	statusErr.listNodesDetails(clientSet{})
 
 	ingressType := os.Getenv("KUBERNETES_WEB_EXPOSE_TYPE")
 	if ingressType != "" {
-		statusErr.checkIngress()
+		statusErr.checkIngress(clientSet{})
 	}
-	
 
 	err := consolidation(&statusErr)
 	if err != nil {
@@ -53,7 +54,11 @@ type StatusError struct {
 	IngressStatus              error
 }
 
-func getClientSet() *kubernetes.Clientset {
+type clientSet struct {
+	clientset *kubernetes.Clientset
+}
+
+func (cs *clientSet) getClientSet() {
 	// Create a new Kubernetes client
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -63,7 +68,8 @@ func getClientSet() *kubernetes.Clientset {
 	if err != nil {
 		panic(err.Error())
 	}
-	return clientset
+	//return clientset
+	cs.clientset = clientset
 }
 
 func consolidation(statusErr *StatusError) error {
@@ -108,4 +114,32 @@ func consolidation(statusErr *StatusError) error {
 		return errors.New("requirements check failed")
 	}
 	return nil
+}
+
+// Helper functions:
+// contains checks if a string is present in a slice.
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
+// containsAll checks if all elements of `subset` are present in `set`.
+func containsAll(set []string, subset []string) bool {
+	for _, sub := range subset {
+		found := false
+		for _, s := range set {
+			if s == sub {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }

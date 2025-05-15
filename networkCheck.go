@@ -37,16 +37,8 @@ func (networkErr *StatusError) networkCheckBlaze() {
 }
 
 func (networkErr *StatusError) networkCheckImageRegistry() {
-	//fmt.Println("Executing networkCheckImageRegistry...\n")
-	//networkErr := &StatusError{}
 
-	var imageRegistryCheck string
-	imageRegistryCheck = os.Getenv("DOCKER_REGISTRY")
-
-	if imageRegistryCheck == "" {
-		imageRegistryCheck = "https://gcr.io/verdant-bulwark-278"
-		return
-	}
+	imageRegistryCheck := os.Getenv("DOCKER_REGISTRY")
 	fmt.Println(imageRegistryCheck)
 
 	client := &http.Client{}

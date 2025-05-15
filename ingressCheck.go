@@ -14,35 +14,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// contains checks if a string is present in a slice.
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
-
-// containsAll checks if all elements of `subset` are present in `set`.
-func containsAll(set []string, subset []string) bool {
-	for _, sub := range subset {
-		found := false
-		for _, s := range set {
-			if s == sub {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
-}
-
-func (statusError *StatusError) checkIngress() {
-	clientset := getClientSet()
+func (statusError *StatusError) checkIngress(ck clientSet) {
+	clientset := ck.clientset
 	ingressType := os.Getenv("KUBERNETES_WEB_EXPOSE_TYPE")
 	var ingressNs string
 	switch ingressType != "" {
@@ -67,6 +40,7 @@ func (statusError *StatusError) checkIngress() {
 				nsfound = true
 				break // Exit the loop as we found the matching namespace
 			}
+			continue
 		}
 
 		if !nsfound {
@@ -77,22 +51,26 @@ func (statusError *StatusError) checkIngress() {
 		if nsfound {
 			err := checkIngressResouces(ingressNs, clientset)
 			if err != nil {
+				fmt.Printf("error checking ingress resources: %v", err)
 				statusError.IngressStatus = err
 			}
 			if ingressType == "ISTIO" {
 				roleErr := ingressRoleCheckIstio(clientset)
 				if roleErr != nil {
+					fmt.Printf("error checking istio-ingress role: %v", roleErr)
 					statusError.IngressStatus = err
 				}
 
 				gatewayErr := gatewayCheck(ingressNs)
 				if gatewayErr != nil {
+					fmt.Printf("error checking ingress gateway: %v", gatewayErr)
 					statusError.IngressStatus = gatewayErr
 				}
 			}
 			if ingressType == "INGRESS" {
 				err := ingressRoleCheckNginx(clientset)
 				if err != nil {
+					fmt.Printf("error checking nginx-ingress role: %v", err)
 					statusError.IngressStatus = err
 				}
 			}
@@ -286,7 +264,7 @@ func validateGatewaySpec(spec map[string]interface{}) error {
 				return fmt.Errorf("port 80 must use protocol HTTP")
 			}
 		case 443:
-			if protocol != "HTTPS" || serverMap["tls"].(map[string]interface{})["mode"] != "SIMPLE" {
+			if protocol != "HTTPS" && serverMap["tls"].(map[string]interface{})["mode"] != "SIMPLE" {
 				//	fmt.Errorf("port 443 must use protocol HTTPS with TLS mode SIMPLE")
 				return fmt.Errorf("port 443 must use protocol HTTPS with TLS mode SIMPLE")
 			}
@@ -295,7 +273,7 @@ func validateGatewaySpec(spec map[string]interface{}) error {
 				return fmt.Errorf("port 443 must use the wildcard credential named %s", wildcardCredential)
 			}
 		case 15443:
-			if protocol != "HTTPS" || serverMap["tls"].(map[string]interface{})["mode"] != "PASSTHROUGH" {
+			if protocol != "HTTPS" && serverMap["tls"].(map[string]interface{})["mode"] != "PASSTHROUGH" {
 				//fmt.Errorf("port 15443 must use protocol HTTPS with TLS mode PASSTHROUGH")
 				return fmt.Errorf("port 15443 must use protocol HTTPS with TLS mode PASSTHROUGH")
 			}

@@ -8,8 +8,6 @@ import (
 
 func main() {
 	statusErr := pkg.StatusError{}
-	fmt.Println("Starting the requirements check...")
-
 	pkg.Execute()
 
 	err := pkg.Consolidation(&statusErr)

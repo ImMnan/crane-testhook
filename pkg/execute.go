@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"k8s.io/client-go/kubernetes"
@@ -43,7 +44,7 @@ func Execute() {
 	cs := ClientSet{}
 	cs.getClientSet()
 	statusError := StatusError{}
-
+	fmt.Println("\nStarting the requirements check...")
 	statusError.networkCheckBlaze()
 	statusError.networkCheckImageRegistry()
 	statusError.networkCheckThirdParty()

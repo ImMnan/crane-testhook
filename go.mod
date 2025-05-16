@@ -1,4 +1,4 @@
-module github.com/immnan/k8s_requirementsCheck-crane
+module github.com/immnan/crane-testhook
 
 go 1.23.3
 

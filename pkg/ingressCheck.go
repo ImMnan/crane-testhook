@@ -54,6 +54,12 @@ func (statusError *StatusError) checkIngress(cs *ClientSet) {
 				fmt.Printf("error checking ingress resources:\n %v", err)
 				statusError.IngressStatus = err
 			}
+			err = checkSecret(clientset)
+			if err != nil {
+				fmt.Printf("error checking ingress secret:\n %v", err)
+				statusError.IngressStatus = err
+			}
+
 			if ingressType == "ISTIO" {
 				roleErr := ingressRoleCheckIstio(clientset)
 				if roleErr != nil {
@@ -290,23 +296,57 @@ func validateGatewaySpec(spec map[string]interface{}) error {
 }
 
 func labelCheckIstio(clientset *kubernetes.Clientset) error {
-	ns := os.Getenv("WORKING_NAMESPACE")
-	nsObject, error := clientset.CoreV1().Namespaces().Get(context.TODO(), ns, metav1.GetOptions{})
+	workingNs := os.Getenv("WORKING_NAMESPACE")
+	nsObject, error := clientset.CoreV1().Namespaces().Get(context.TODO(), workingNs, metav1.GetOptions{})
 	if error != nil {
-		return fmt.Errorf("failed to get namespace %s to check labels: %v", ns, error)
+		return fmt.Errorf("failed to get namespace %s to check labels: %v", workingNs, error)
 	}
 	istioInjection := false
 	getLabels := nsObject.GetLabels()
 	for key, value := range getLabels {
 		if key == "istio-injection" && value == "enabled" {
-			fmt.Printf("Namespace %s has the istio-injection label set to enabled\n", ns)
+			fmt.Printf("Namespace %s has the istio-injection label set to enabled\n", workingNs)
 			istioInjection = true
 			return nil
 		}
 		continue
 	}
 	if !istioInjection {
-		return fmt.Errorf("namespace %s does not have the istio-injection label set to enabled", ns)
+		return fmt.Errorf("namespace %s does not have the istio-injection label set to enabled", workingNs)
+	}
+	return nil
+}
+
+func checkSecret(clientset *kubernetes.Clientset) error {
+	// Read the namespace from the WORKING_NAMESPACE environment variable
+	ingressType := os.Getenv("KUBERNETES_WEB_EXPOSE_TYPE")
+	if ingressType == "" {
+		return fmt.Errorf("kubernetes_web_expose_type environment variable is not set")
+	}
+	workingNs := os.Getenv("WORKING_NAMESPACE")
+	if workingNs == "" {
+		return fmt.Errorf("working_namespace environment variable is not set")
+	}
+
+	// Read the secret name from the SECRET_NAME environment variable
+	secretName := os.Getenv("KUBERNETES_WEB_EXPOSE_TLS_SECRET_NAME")
+	if secretName == "" {
+		return fmt.Errorf("kubernetes_web_expose_tls_secret_name environment variable is not set")
+	}
+	if ingressType == "ISTIO" {
+		secret, err := clientset.CoreV1().Secrets("istio-ingress").Get(context.TODO(), secretName, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get secret %s in namespace instio-ingresss:\n %v", secretName, err)
+		}
+		fmt.Printf("Secret %s is found (%s) in namespace istio-ingress exists\n", secretName, secret)
+	}
+	if ingressType == "INGRESS" {
+		// Fetch the specific secret by name
+		secret, err := clientset.CoreV1().Secrets(workingNs).Get(context.TODO(), secretName, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get secret %s in namespace %s:\n %v", secretName, workingNs, err)
+		}
+		fmt.Printf("Secret %s is found (%s) in namespace %s exists\n", secretName, secret, workingNs)
 	}
 	return nil
 }

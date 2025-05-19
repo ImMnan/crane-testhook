@@ -62,12 +62,7 @@ func (networkErr *StatusError) networkCheckImageRegistry() {
 }
 
 func (networkErr *StatusError) networkCheckThirdParty() {
-	//	networkErr := &StatusError{}
-	//	var imageRegistryCheck string
-	//	imageRegistryCheck = os.Getenv("DOCKER_REGISTRY")
-	//	if imageRegistryCheck != "gcr.io/verdant-bulwark-278" {
-	//
-	//	}
+
 	thirdPartyNetworkCheck := []string{"https://pypi.org/", "https://storage.googleapis.com", "https://hub.docker.com", "https://index.docker.io"}
 	client := &http.Client{}
 

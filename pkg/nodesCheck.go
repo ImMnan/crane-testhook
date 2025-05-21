@@ -3,6 +3,7 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -20,22 +21,35 @@ func (statusErr *StatusError) listNodesDetails(cs *ClientSet) {
 		//fmt.Println(statusErr.NodeStatus)
 	}
 	for i, nd := range nodes.Items {
-		if nd.Status.Capacity.Cpu().MilliValue() <= 2000 {
-			statusErr.NodeResourceStatus = append(statusErr.NodeResourceStatus, map[string]error{fmt.Sprintf("cpu node %d", i): fmt.Errorf("insufficient %d", nd.Status.Capacity.Cpu().MilliValue())})
-			fmt.Printf("node %d insufficient cpu %d\n", i, nd.Status.Capacity.Cpu().MilliValue())
-		}
-		fmt.Printf("Node: %d, CPU: %d", i, nd.Status.Capacity.Cpu().MilliValue())
+		var errs []string
 
-		if nd.Status.Capacity.Memory().MilliValue() <= 4096 {
-			statusErr.NodeResourceStatus = append(statusErr.NodeResourceStatus, map[string]error{"memory/node": fmt.Errorf("insufficient %d", nd.Status.Capacity.Memory().MilliValue())})
-			fmt.Printf("node %d insufficient mem %d\n", i, nd.Status.Capacity.Memory().MilliValue())
-		}
-		fmt.Printf("Node: %d, MEM: %d", i, nd.Status.Capacity.Memory().MilliValue())
-		if nd.Status.Capacity.StorageEphemeral().Value() <= 64000 {
-			statusErr.NodeResourceStatus = append(statusErr.NodeResourceStatus, map[string]error{"storage/node": fmt.Errorf("insufficient %d", nd.Status.Capacity.StorageEphemeral().Value())})
-			fmt.Printf("node %d insufficient storage %d", i, nd.Status.Capacity.StorageEphemeral().Value())
-		}
-		fmt.Printf("Node: %d, Storage: %d\n", i, nd.Status.Capacity.StorageEphemeral().Value())
+		cpu := nd.Status.Capacity.Cpu().MilliValue()
+		mem := nd.Status.Capacity.Memory().MilliValue()
+		storage := nd.Status.Capacity.StorageEphemeral().Value()
 
+		if cpu < 2000 {
+			statusErr.NodeResourceStatus = append(statusErr.NodeResourceStatus, map[string]error{
+				fmt.Sprintf("cpu node %d", i): fmt.Errorf("insufficient %d", cpu),
+			})
+			errs = append(errs, fmt.Sprintf("CPU: %d", cpu))
+		}
+		if mem < 4096 {
+			statusErr.NodeResourceStatus = append(statusErr.NodeResourceStatus, map[string]error{
+				fmt.Sprintf("memory node %d", i): fmt.Errorf("insufficient %d", mem),
+			})
+			errs = append(errs, fmt.Sprintf("MEM: %d", mem))
+		}
+		if storage < 64000 {
+			statusErr.NodeResourceStatus = append(statusErr.NodeResourceStatus, map[string]error{
+				fmt.Sprintf("storage node %d", i): fmt.Errorf("insufficient %d", storage),
+			})
+			errs = append(errs, fmt.Sprintf("STORAGE: %d", storage))
+		}
+
+		if len(errs) > 0 {
+			fmt.Printf("\n[%s] node %d insufficient resources: %s\n", time.Now().Format("2006-01-02 15:04:05"), i+1, errs)
+		} else {
+			fmt.Printf("\n[%s] Node: %d, CPU: %d, MEM: %d, Storage: %d\n", time.Now().Format("2006-01-02 15:04:05"), i+1, cpu, mem, storage)
+		}
 	}
 }

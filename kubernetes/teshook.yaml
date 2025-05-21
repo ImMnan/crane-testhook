@@ -1,3 +1,29 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: crane-get-rolebindings
+  namespace: default
+rules:
+- apiGroups: ["rbac.authorization.k8s.io", ""]
+  resources: ["rolebindings", "roles", "secrets"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: crane-get-rolebindings-binding
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+roleRef:
+  kind: Role
+  name: crane-get-rolebindings
+  apiGroup: rbac.authorization.k8s.io
+---  
+
 apiVersion: v1
 kind: Pod
 metadata:
@@ -5,6 +31,7 @@ metadata:
   namespace: default
 spec:
   serviceAccountName: default
+  automountServiceAccountToken: true
   containers:
   - name: cranetestctr
     securityContext:
@@ -24,8 +51,12 @@ spec:
     - name: SV_ENABLE
       value: "true"
     - name: KUBERNETES_WEB_EXPOSE_TYPE
-      value: "NGINX"
-    image: "immnan/godebug:0.1.0"
+      value: "INGRESS"
+    - name: DOCKER_REGISTRY
+      value: "gcr.io/verdant-bulwark-278"  
+    - name: KUBERNETES_WEB_EXPOSE_TLS_SECRET_NAME
+      value: "wildcard-credential1"
+    image: "immnan/cranetest:0.1.14"
     imagePullPolicy: "Always"
     resources:
       requests:

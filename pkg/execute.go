@@ -39,21 +39,20 @@ func (cs *ClientSet) getClientSet() {
 	cs.clientset = clientset
 }
 
-func Execute() {
+func Execute(statusError *StatusError) {
 	// This is a test function to check if the package is working
-	cs := ClientSet{}
+	cs := &ClientSet{}
 	cs.getClientSet()
-	statusError := StatusError{}
+	//	statusError := &StatusError{}
 	fmt.Println("\nStarting the requirements check...")
+	svEnabled := os.Getenv("SV_ENABLE")
 	statusError.networkCheckBlaze()
 	statusError.networkCheckImageRegistry()
 	statusError.networkCheckThirdParty()
-	statusError.listNodesDetails(&cs)
-	statusError.rbacDefault(&cs)
-
-	svEnabled := os.Getenv("SV_ENABLE")
+	statusError.listNodesDetails(cs)
+	statusError.rbacDefault(cs)
 	if svEnabled == "true" {
-		statusError.checkIngress(&cs)
+		statusError.checkIngress(cs)
 	}
 }
 
@@ -123,8 +122,33 @@ func containsAll(set []string, subset []string) bool {
 			}
 		}
 		if !found {
+			fmt.Printf("Missing required item: %q\n", sub)
 			return false
 		}
 	}
 	return true
+}
+
+//func dedup(slice []string) []string {
+//	seen := make(map[string]struct{})
+//	var result []string
+//	for _, s := range slice {
+//		if _, ok := seen[s]; !ok {
+//			seen[s] = struct{}{}
+//			result = append(result, s)
+//		}
+//	}
+//	return result
+//}
+
+func dedup(items []string) []string {
+	seen := make(map[string]bool)
+	var result []string
+	for _, item := range items {
+		if !seen[item] {
+			seen[item] = true
+			result = append(result, item)
+		}
+	}
+	return result
 }

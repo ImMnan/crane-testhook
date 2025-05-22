@@ -24,32 +24,33 @@ func (statusErr *StatusError) listNodesDetails(cs *ClientSet) {
 		var errs []string
 
 		cpu := nd.Status.Capacity.Cpu().MilliValue()
-		mem := nd.Status.Capacity.Memory().MilliValue()
+		mem := nd.Status.Capacity.Memory().Value()
 		storage := nd.Status.Capacity.StorageEphemeral().Value()
-
+		memMB := mem / (1024 * 1024)
+		storageMB := storage / (1024 * 1024)
 		if cpu < 2000 {
 			statusErr.NodeResourceStatus = append(statusErr.NodeResourceStatus, map[string]error{
 				fmt.Sprintf("cpu node %d", i): fmt.Errorf("insufficient %d", cpu),
 			})
 			errs = append(errs, fmt.Sprintf("CPU: %d", cpu))
 		}
-		if mem < 4096 {
+		if memMB < 4096 {
 			statusErr.NodeResourceStatus = append(statusErr.NodeResourceStatus, map[string]error{
-				fmt.Sprintf("memory node %d", i): fmt.Errorf("insufficient %d", mem),
+				fmt.Sprintf("memory node %d", i): fmt.Errorf("insufficient %d", memMB),
 			})
-			errs = append(errs, fmt.Sprintf("MEM: %d", mem))
+			errs = append(errs, fmt.Sprintf("MEM: %d MB", memMB))
 		}
-		if storage < 64000 {
+		if storageMB < 64 {
 			statusErr.NodeResourceStatus = append(statusErr.NodeResourceStatus, map[string]error{
-				fmt.Sprintf("storage node %d", i): fmt.Errorf("insufficient %d", storage),
+				fmt.Sprintf("storage node %d", i): fmt.Errorf("insufficient %d", storageMB),
 			})
-			errs = append(errs, fmt.Sprintf("STORAGE: %d", storage))
+			errs = append(errs, fmt.Sprintf("STORAGE: %d MB", storageMB))
 		}
 
 		if len(errs) > 0 {
-			fmt.Printf("\n[%s] node %d insufficient resources: %s\n", time.Now().Format("2006-01-02 15:04:05"), i+1, errs)
+			fmt.Printf("\n[%s][error] node %d insufficient resources: %s", time.Now().Format("2006-01-02 15:04:05"), i+1, errs)
 		} else {
-			fmt.Printf("\n[%s] Node: %d, CPU: %d, MEM: %d, Storage: %d\n", time.Now().Format("2006-01-02 15:04:05"), i+1, cpu, mem, storage)
+			fmt.Printf("\n[%s][INFO] Node: %d, CPU: %d, MEM: %d MB, Storage: %d MB", time.Now().Format("2006-01-02 15:04:05"), i+1, cpu, memMB, storageMB)
 		}
 	}
 }

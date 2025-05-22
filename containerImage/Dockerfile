@@ -1,18 +1,24 @@
-# Build stage
-FROM golang:1.22-alpine AS builder
 
-WORKDIR /app
-COPY . .
+FROM --platform=linux/amd64 alpine:latest
 
-# Build the Go binary
-RUN go build -o cranetest .
+WORKDIR /usr/local/bin
+COPY cranetest .
 
-# Final image
-FROM alpine:latest
+# Set environment variables
+ENV WORKING_NAMESPACE=""
+ENV ROLE_NAME=""
+ENV ROLE_BINDING_NAME=""
+ENV SERVICE_ACCOUNT_NAME=""
+ENV KUBERNETES_WEB_EXPOSE_TYPE=""
+ENV SV_ENABLE=""
+ENV DOCKER_REGISTRY=""
+ENV KUBERNETES_WEB_EXPOSE_TLS_SECRET_NAME=""
 
-WORKDIR /app
-COPY . .
+# Create a non-root user and group
+RUN addgroup -g 1337 -S appgroup && adduser -u 1337 -S appuser -G appgroup \
+    && chown appuser:appgroup /usr/local/bin/cranetest \
+    && chmod +x /usr/local/bin/cranetest
 
-# Set execute permissions (optional, usually not needed)
-# RUN chmod +x /usr/local/bin/cranetest
+USER appuser
+
 CMD ["/usr/local/bin/cranetest"]

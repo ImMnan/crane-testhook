@@ -18,7 +18,7 @@ func (statusError *StatusError) rbacDefault(cs *ClientSet) {
 	// Read the role name from the ROLE_NAME environment variable
 	roleName := os.Getenv("ROLE_NAME")
 	if roleName == "" {
-		statusError.RBAC = fmt.Errorf("ROLE_NAME environment variable is not set")
+		statusError.RBAC = fmt.Errorf("role_name environment variable is not set")
 	}
 
 	requiredApiGroup := []string{"", "extensions", "apps", "batch"}
@@ -27,6 +27,7 @@ func (statusError *StatusError) rbacDefault(cs *ClientSet) {
 
 	roleDesc, err := cs.clientset.RbacV1().Roles(workingNs).Get(context.TODO(), roleName, metav1.GetOptions{})
 	if err != nil {
+		fmt.Printf("\n[%s][error] failed to get role %s in namespace %s: %v", time.Now().Format("2006-01-02 15:04:05"), roleName, workingNs, err)
 		statusError.RBAC = fmt.Errorf("failed to get role %s in namespace %s: %v", roleName, workingNs, err)
 	}
 	found := false
@@ -40,9 +41,9 @@ func (statusError *StatusError) rbacDefault(cs *ClientSet) {
 	allResources = dedup(allResources)
 	allVerbs = dedup(allVerbs)
 
-	fmt.Printf("Role %s in namespace %s has API Groups: %q\n", roleName, workingNs, allApiGroups)
-	fmt.Printf("Role %s in namespace %s has Resources: %v\n", roleName, workingNs, allResources)
-	fmt.Printf("Role %s in namespace %s has Verbs: %v\n", roleName, workingNs, allVerbs)
+	//	fmt.Printf("Role %s in namespace %s has API Groups: %q\n", roleName, workingNs, allApiGroups)
+	//	fmt.Printf("Role %s in namespace %s has Resources: %v\n", roleName, workingNs, allResources)
+	//	fmt.Printf("Role %s in namespace %s has Verbs: %v\n", roleName, workingNs, allVerbs)
 
 	if containsAll(allApiGroups, requiredApiGroup) &&
 		containsAll(allResources, requiredResources) &&
@@ -51,15 +52,15 @@ func (statusError *StatusError) rbacDefault(cs *ClientSet) {
 	}
 
 	if found {
-		fmt.Printf("\n[%s] Role %s in namespace %s has the required permissions\n", time.Now().Format("2006-01-02 15:04:05"), roleName, workingNs)
+		fmt.Printf("\n[%s][INFO] Role %s in namespace %s has the required permissions", time.Now().Format("2006-01-02 15:04:05"), roleName, workingNs)
 	} else {
-		fmt.Printf("\n[%s] Role %s in namespace %s does NOT have the required permissions\n", time.Now().Format("2006-01-02 15:04:05"), roleName, workingNs)
+		fmt.Printf("\n[%s][error] Role %s in namespace %s does NOT have the required permissions", time.Now().Format("2006-01-02 15:04:05"), roleName, workingNs)
 		statusError.RBAC = fmt.Errorf("role %s in namespace %s does not have the required permissions", roleName, workingNs)
 	}
 
 	rbacBindingError := saBinding(cs)
 	if rbacBindingError != nil {
-		fmt.Printf("\n[%s] role binding error: %v\n", time.Now().Format("2006-01-02 15:04:05"), rbacBindingError)
+		fmt.Printf("\n[%s][error] role binding error: %v", time.Now().Format("2006-01-02 15:04:05"), rbacBindingError)
 		statusError.RBAC = fmt.Errorf("role binding error: %v", rbacBindingError)
 	}
 }
@@ -95,7 +96,7 @@ func saBinding(cs *ClientSet) error {
 	rolebindingFound := false
 	for _, subject := range rbDesc.Subjects {
 		if subject.Kind == "ServiceAccount" && subject.Name == saName {
-			fmt.Printf("\n[%s] role binding %s in namespace %s binds service account %s with role %s\n", time.Now().Format("2006-01-02 15:04:05"), roleBinding, workingNs, saName, roleName)
+			fmt.Printf("\n[%s][INFO] role binding %s in namespace %s binds service account %s with role %s", time.Now().Format("2006-01-02 15:04:05"), roleBinding, workingNs, saName, roleName)
 			rolebindingFound = true
 			return nil
 		}

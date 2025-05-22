@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -44,7 +45,7 @@ func Execute(statusError *StatusError) {
 	cs := &ClientSet{}
 	cs.getClientSet()
 	//	statusError := &StatusError{}
-	fmt.Println("\nStarting the requirements check...")
+	fmt.Printf("\n[%s][INFO] Starting the requirements check...", time.Now().Format("2006-01-02 15:04:05"))
 	svEnabled := os.Getenv("SV_ENABLE")
 	statusError.networkCheckBlaze()
 	statusError.networkCheckImageRegistry()
@@ -54,19 +55,20 @@ func Execute(statusError *StatusError) {
 	if svEnabled == "true" {
 		statusError.checkIngress(cs)
 	}
+
 }
 
 func Consolidation(statusErr *StatusError) error {
 	// Check NodeStatus
 	if statusErr.NodeStatus != nil {
-		return errors.New("requirements check failed")
+		return errors.New("requirements check failed, check errors in logs")
 	}
 
 	// Check NodeResourceStatus
 	for _, resourceStatus := range statusErr.NodeResourceStatus {
 		for _, err := range resourceStatus {
 			if err != nil {
-				return errors.New("requirements check failed")
+				return errors.New("requirements check failed, check errors in logs")
 			}
 		}
 	}
@@ -75,27 +77,27 @@ func Consolidation(statusErr *StatusError) error {
 	for _, blazeStatus := range statusErr.BlazeNetworkStatus {
 		for _, err := range blazeStatus {
 			if err != nil {
-				return errors.New("requirements check failed")
+				return errors.New("requirements check failed, check errors in logs")
 			}
 		}
 	}
 
 	// Check ImageRegistryNetworkStatus
 	if statusErr.ImageRegistryNetworkStatus != nil {
-		return errors.New("requirements check failed")
+		return errors.New("requirements check failed, check errors in logs")
 	}
 
 	// Check ThirdPartyNetworkStatus
 	for _, thirdPartyStatus := range statusErr.ThirdPartyNetworkStatus {
 		for _, err := range thirdPartyStatus {
 			if err != nil {
-				return errors.New("requirements check failed")
+				return errors.New("requirements check failed, check errors in logs")
 			}
 		}
 	}
 	// Check IngressAvailability
 	if statusErr.IngressStatus != nil {
-		return errors.New("requirements check failed")
+		return errors.New("requirements check failed, check errors in logs")
 	}
 	return nil
 }
@@ -122,7 +124,7 @@ func containsAll(set []string, subset []string) bool {
 			}
 		}
 		if !found {
-			fmt.Printf("Missing required item: %q\n", sub)
+			//fmt.Printf("\n[%s]Missing required item: %q", sub)
 			return false
 		}
 	}

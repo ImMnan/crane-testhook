@@ -30,14 +30,14 @@ func (statusError *StatusError) checkIngress(cs *ClientSet) {
 
 	listNamespaces, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		fmt.Printf("\n[%s] error listing namespaces: %v\n", time.Now().Format("2006-01-02 15:04:05"), err)
+		fmt.Printf("\n[%s][error] listing namespaces: %v", time.Now().Format("2006-01-02 15:04:05"), err)
 		statusError.IngressStatus = fmt.Errorf("[%s] error listing namespaces: %v", time.Now().Format("2006-01-02 15:04:05"), err)
 	} else {
 
 		nsfound := false
 		for _, names := range listNamespaces.Items {
 			if ingressNs == names.Name {
-				fmt.Printf("\n[%s] Namespace %s exists for the web service type %s\n", time.Now().Format("2006-01-02 15:04:05"), names.Name, ingressType)
+				fmt.Printf("\n[%s][INFO] Namespace %s exists for the web service type %s", time.Now().Format("2006-01-02 15:04:05"), names.Name, ingressType)
 				nsfound = true
 				break // Exit the loop as we found the matching namespace
 			}
@@ -45,42 +45,42 @@ func (statusError *StatusError) checkIngress(cs *ClientSet) {
 		}
 
 		if !nsfound {
-			fmt.Printf("\n[%s] namespace %s does not exist for the web service type %s\n", time.Now().Format("2006-01-02 15:04:05"), ingressNs, ingressType)
+			fmt.Printf("\n[%s][error] namespace %s does not exist for the web service type %s", time.Now().Format("2006-01-02 15:04:05"), ingressNs, ingressType)
 			statusError.IngressStatus = fmt.Errorf("[%s] namespace %s does not exist for the web service type %s", time.Now().Format("2006-01-02 15:04:05"), ingressNs, ingressType)
 		}
 		if nsfound {
 			err := checkIngressResouces(ingressNs, clientset)
 			if err != nil {
-				fmt.Printf("\n[%s] error checking ingress resources:\n %v\n", time.Now().Format("2006-01-02 15:04:05"), err)
+				fmt.Printf("\n[%s][error] checking ingress resources: %v", time.Now().Format("2006-01-02 15:04:05"), err)
 				statusError.IngressStatus = fmt.Errorf("[%s] error checking ingress resources: %v", time.Now().Format("2006-01-02 15:04:05"), err)
 			}
 			err = checkSecret(clientset)
 			if err != nil {
-				fmt.Printf("\n[%s] error checking ingress secret:\n %v\n", time.Now().Format("2006-01-02 15:04:05"), err)
+				fmt.Printf("\n[%s][error] checking ingress secret: %v", time.Now().Format("2006-01-02 15:04:05"), err)
 				statusError.IngressStatus = fmt.Errorf("[%s] error checking ingress secret: %v", time.Now().Format("2006-01-02 15:04:05"), err)
 			}
 
 			if ingressType == "ISTIO" {
 				roleErr := ingressRoleCheckIstio(clientset)
 				if roleErr != nil {
-					fmt.Printf("\n[%s] error checking istio-ingress role:\n %v\n", time.Now().Format("2006-01-02 15:04:05"), roleErr)
+					fmt.Printf("\n[%s][error] checking istio-ingress role: %v", time.Now().Format("2006-01-02 15:04:05"), roleErr)
 					statusError.IngressStatus = fmt.Errorf("[%s] error checking istio-ingress role: %v", time.Now().Format("2006-01-02 15:04:05"), roleErr)
 				}
 				labelErr := labelCheckIstio(clientset)
 				if labelErr != nil {
-					fmt.Printf("\n[%s] error checking istio ingress labels:\n %v\n", time.Now().Format("2006-01-02 15:04:05"), labelErr)
+					fmt.Printf("\n[%s][error] checking istio ingress labels: %v", time.Now().Format("2006-01-02 15:04:05"), labelErr)
 					statusError.IngressStatus = fmt.Errorf("[%s] error checking istio ingress labels: %v", time.Now().Format("2006-01-02 15:04:05"), labelErr)
 				}
 				gatewayErr := gatewayCheck(ingressNs)
 				if gatewayErr != nil {
-					fmt.Printf("\n[%s] error checking ingress gateway:\n %v\n", time.Now().Format("2006-01-02 15:04:05"), gatewayErr)
+					fmt.Printf("\n[%s][error] checking ingress gateway: %v", time.Now().Format("2006-01-02 15:04:05"), gatewayErr)
 					statusError.IngressStatus = fmt.Errorf("[%s] error checking ingress gateway: %v", time.Now().Format("2006-01-02 15:04:05"), gatewayErr)
 				}
 			}
 			if ingressType == "INGRESS" {
 				err := ingressRoleCheckNginx(clientset)
 				if err != nil {
-					fmt.Printf("\n[%s] error checking nginx-ingress role:\n %v\n", time.Now().Format("2006-01-02 15:04:05"), err)
+					fmt.Printf("\n[%s][error] checking nginx-ingress role: %v", time.Now().Format("2006-01-02 15:04:05"), err)
 					statusError.IngressStatus = fmt.Errorf("[%s] error checking nginx-ingress role: %v", time.Now().Format("2006-01-02 15:04:05"), err)
 				}
 			}
@@ -98,11 +98,11 @@ func checkIngressResouces(ingressNs string, clientset *kubernetes.Clientset) err
 	externalIpfound := false
 	for _, svcType := range svcList.Items {
 		if svcType.Spec.Type == "LoadBalancer" {
-			fmt.Printf("\n[%s] Service %s is of type LoadBalancer", time.Now().Format("2006-01-02 15:04:05"), svcType.Name)
+			fmt.Printf("\n[%s][INFO] Service %s is of type LoadBalancer", time.Now().Format("2006-01-02 15:04:05"), svcType.Name)
 			lbfound = true
 			// Check if the service has an external IP
 			if len(svcType.Status.LoadBalancer.Ingress) > 0 {
-				fmt.Printf("\n[%s] Service %s has an external IP: %s", time.Now().Format("2006-01-02 15:04:05"), svcType.Name, svcType.Status.LoadBalancer.Ingress[0].IP)
+				fmt.Printf("\n[%s][INFO] Service %s has an external IP: %s", time.Now().Format("2006-01-02 15:04:05"), svcType.Name, svcType.Status.LoadBalancer.Ingress[0].IP)
 				externalIpfound = true
 			}
 		}
@@ -147,7 +147,7 @@ func ingressRoleCheckNginx(clientset *kubernetes.Clientset) error {
 		if contains(rule.APIGroups, requiredApiGroup) &&
 			containsAll(rule.Resources, requiredResources) &&
 			containsAll(rule.Verbs, requiredVerbs) {
-			fmt.Printf("\n[%s] Role %s in namespace %s has the required permissions to run SV with Nginx\n", time.Now().Format("2006-01-02 15:04:05"), roleName, workingNs)
+			fmt.Printf("\n[%s][INFO] Role %s in namespace %s has the required permissions to run SV with Nginx", time.Now().Format("2006-01-02 15:04:05"), roleName, workingNs)
 			found = true
 			break
 		}
@@ -190,7 +190,7 @@ func ingressRoleCheckIstio(clientset *kubernetes.Clientset) error {
 		if contains(rule.APIGroups, requiredApiGroup) &&
 			containsAll(rule.Resources, requiredResources) &&
 			containsAll(rule.Verbs, requiredVerbs) {
-			fmt.Printf("\n[%s] Role %s in namespace %s has the required permissions to run SV with Istio\n", time.Now().Format("2006-01-02 15:04:05"), roleName, workingNs)
+			fmt.Printf("\n[%s][INFO] Role %s in namespace %s has the required permissions to run SV with Istio", time.Now().Format("2006-01-02 15:04:05"), roleName, workingNs)
 			found = true
 			break
 		}
@@ -245,7 +245,7 @@ func gatewayCheck(ingressNs string) error {
 		return fmt.Errorf("gateway %s spec validation failed: %v", gatewayName, err)
 	}
 
-	fmt.Printf("\n[%s] Gateway %s in namespace %s matches the required spec\n", time.Now().Format("2006-01-02 15:04:05"), gatewayName, ingressNs)
+	fmt.Printf("\n[%s][INFO] Gateway %s in namespace %s matches the required spec", time.Now().Format("2006-01-02 15:04:05"), gatewayName, ingressNs)
 	return nil
 }
 
@@ -314,7 +314,7 @@ func labelCheckIstio(clientset *kubernetes.Clientset) error {
 	getLabels := nsObject.GetLabels()
 	for key, value := range getLabels {
 		if key == "istio-injection" && value == "enabled" {
-			fmt.Printf("\n[%s] Namespace %s has the istio-injection label set to enabled", time.Now().Format("2006-01-02 15:04:05"), workingNs)
+			fmt.Printf("\n[%s][INFO] Namespace %s has the istio-injection label set to enabled", time.Now().Format("2006-01-02 15:04:05"), workingNs)
 			istioInjection = true
 			return nil
 		}
@@ -345,17 +345,17 @@ func checkSecret(clientset *kubernetes.Clientset) error {
 	if ingressType == "ISTIO" {
 		secret, err := clientset.CoreV1().Secrets("istio-ingress").Get(context.TODO(), secretName, metav1.GetOptions{})
 		if err != nil {
-			return fmt.Errorf("failed to get secret %s in namespace instio-ingresss:\n %v", secretName, err)
+			return fmt.Errorf("failed to get secret %s in namespace instio-ingresss: %v", secretName, err)
 		}
-		fmt.Printf("\n[%s] Secret %s is found (%s) in namespace istio-ingress exists\n", time.Now().Format("2006-01-02 15:04:05"), secretName, secret.Name)
+		fmt.Printf("\n[%s] Secret %s is found (%s) in namespace istio-ingress exists", time.Now().Format("2006-01-02 15:04:05"), secretName, secret.Name)
 	}
 	if ingressType == "INGRESS" {
 		// Fetch the specific secret by name
 		secret, err := clientset.CoreV1().Secrets(workingNs).Get(context.TODO(), secretName, metav1.GetOptions{})
 		if err != nil {
-			return fmt.Errorf("failed to get secret %s in namespace %s:\n %v", secretName, workingNs, err)
+			return fmt.Errorf("failed to get secret %s in namespace %s: %v", secretName, workingNs, err)
 		}
-		fmt.Printf("\n[%s] Secret %s is found (%s) in namespace %s exists\n", time.Now().Format("2006-01-02 15:04:05"), secretName, secret.Name, workingNs)
+		fmt.Printf("\n[%s][INFO] Secret %s is found (%s) in namespace %s exists", time.Now().Format("2006-01-02 15:04:05"), secretName, secret.Name, workingNs)
 	}
 	return nil
 }

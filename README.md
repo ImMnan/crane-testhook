@@ -1,7 +1,7 @@
 # k8s_requirementsCheck-crane
  Requirements check code for crane on Kubernetes
 
-### ENV variables we need
+### ENV variables
 
 - WORKING_NAMESPACE
 - ROLE_NAME
@@ -13,8 +13,11 @@
 ## Image
 
 - Alpine based basic image
-- Should have binary for crane-testhook
-- Bin should be executable
-- Should be executed non-root
-- Image should be publicly accessible. 
+- binary for crane-testhook
+- executed non-root
+- Image  publicly accessible. 
 
+
+## compile 
+
+ go env -w GOOS=linux GOARCH=amd64 && go build -o crane-testhook

@@ -96,7 +96,7 @@ func saBinding(cs *ClientSet) error {
 	rolebindingFound := false
 	for _, subject := range rbDesc.Subjects {
 		if subject.Kind == "ServiceAccount" && subject.Name == saName {
-			fmt.Printf("\n[%s][INFO] role binding %s in namespace %s binds service account %s with role %s", time.Now().Format("2006-01-02 15:04:05"), roleBinding, workingNs, saName, roleName)
+			fmt.Printf("\n[%s][INFO] Role binding %s in namespace %s binds service account %s with role %s", time.Now().Format("2006-01-02 15:04:05"), roleBinding, workingNs, saName, roleName)
 			rolebindingFound = true
 			return nil
 		}

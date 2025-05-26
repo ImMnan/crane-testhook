@@ -25,7 +25,9 @@ func (statusError *StatusError) checkIngress(cs *ClientSet) {
 	case ingressType == "INGRESS":
 		ingressNs = "ingress-nginx"
 	default:
-		ingressNs = "contour"
+		fmt.Printf("\n[%s][error] kubernetes_web_expose_type environment variable is not set or has an invalid value", time.Now().Format("2006-01-02 15:04:05"))
+		statusError.IngressStatus = fmt.Errorf("kubernetes_web_expose_type environment variable is not set or has an invalid value")
+		return // Exit the function if the ingress type is not set or invalid
 	}
 
 	listNamespaces, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
@@ -315,7 +317,7 @@ func validateGatewaySpec(spec map[string]interface{}) error {
 	return nil
 }
 
-// getPortNumber safely extracts the port number as int
+// getPortNumber safely extracts the port number as int, otherwise returns an error
 func getPortNumber(val interface{}) (int, error) {
 	switch n := val.(type) {
 	case int:

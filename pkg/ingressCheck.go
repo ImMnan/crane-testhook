@@ -63,15 +63,15 @@ func (statusError *StatusError) checkIngress(cs *ClientSet) {
 			if ingressType == "ISTIO" {
 				roleErr := ingressRoleCheckIstio(clientset)
 				if roleErr != nil {
-					fmt.Printf("\n[%s][error] checking istio-ingress role: %v", time.Now().Format("2006-01-02 15:04:05"), roleErr)
-					statusError.IngressStatus = fmt.Errorf("[%s] error checking istio-ingress role: %v", time.Now().Format("2006-01-02 15:04:05"), roleErr)
+					fmt.Printf("\n[%s][error] checking istio-system role: %v", time.Now().Format("2006-01-02 15:04:05"), roleErr)
+					statusError.IngressStatus = fmt.Errorf("[%s] error checking istio-system role: %v", time.Now().Format("2006-01-02 15:04:05"), roleErr)
 				}
 				labelErr := labelCheckIstio(clientset)
 				if labelErr != nil {
 					fmt.Printf("\n[%s][error] checking istio ingress labels: %v", time.Now().Format("2006-01-02 15:04:05"), labelErr)
 					statusError.IngressStatus = fmt.Errorf("[%s] error checking istio ingress labels: %v", time.Now().Format("2006-01-02 15:04:05"), labelErr)
 				}
-				gatewayErr := gatewayCheck(ingressNs)
+				gatewayErr := gatewayCheck()
 				if gatewayErr != nil {
 					fmt.Printf("\n[%s][error] checking ingress gateway: %v", time.Now().Format("2006-01-02 15:04:05"), gatewayErr)
 					statusError.IngressStatus = fmt.Errorf("[%s] error checking ingress gateway: %v", time.Now().Format("2006-01-02 15:04:05"), gatewayErr)
@@ -202,8 +202,8 @@ func ingressRoleCheckIstio(clientset *kubernetes.Clientset) error {
 	return nil
 }
 
-func gatewayCheck(ingressNs string) error {
-
+func gatewayCheck() error {
+	workingNs := os.Getenv("WORKING_NAMESPACE")
 	// Create Kubernetes REST configuration
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -216,7 +216,7 @@ func gatewayCheck(ingressNs string) error {
 	}
 
 	// Read the gateway name from the environment variable
-	gatewayName := os.Getenv("KUBERNETES_WEB_EXPOSE_TYPE")
+	gatewayName := os.Getenv("KUBERNETES_ISTIO_GATEWAY_NAME")
 	if gatewayName == "" {
 		return fmt.Errorf("kubernetes_web_expose_type environment variable is not set")
 	}
@@ -228,9 +228,9 @@ func gatewayCheck(ingressNs string) error {
 			Version:  "v1beta1",
 			Resource: "gateways",
 		},
-	).Namespace(ingressNs).Get(context.TODO(), gatewayName, metav1.GetOptions{})
+	).Namespace(workingNs).Get(context.TODO(), gatewayName, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to get Gateway %s in namespace %s: %v", gatewayName, ingressNs, err)
+		return fmt.Errorf("failed to get Gateway %s in namespace %s: %v", gatewayName, workingNs, err)
 	}
 
 	// Extract the spec from the Gateway resource
@@ -245,37 +245,40 @@ func gatewayCheck(ingressNs string) error {
 		return fmt.Errorf("gateway %s spec validation failed: %v", gatewayName, err)
 	}
 
-	fmt.Printf("\n[%s][INFO] Gateway %s in namespace %s matches the required spec", time.Now().Format("2006-01-02 15:04:05"), gatewayName, ingressNs)
+	fmt.Printf("\n[%s][INFO] Gateway %s in namespace %s matches the required spec", time.Now().Format("2006-01-02 15:04:05"), gatewayName, workingNs)
 	return nil
 }
 
-// validateGatewaySpec validates the Gateway spec against the required structure
 func validateGatewaySpec(spec map[string]interface{}) error {
-
 	wildcardCredential := os.Getenv("KUBERNETES_WEB_EXPOSE_TLS_SECRET_NAME")
-	// Check the selector
-	selector, found := spec["selector"].(map[string]interface{})
-	if !found || selector["istio"] != "ingressgateway" {
+
+	selector, ok := spec["selector"].(map[string]interface{})
+	if !ok || selector["istio"] != "ingressgateway" {
 		return fmt.Errorf("selector.istio must be 'ingressgateway'")
 	}
 
-	// Check the servers
-	servers, found := spec["servers"].([]interface{})
-	if !found || len(servers) < 3 {
+	servers, ok := spec["servers"].([]interface{})
+	if !ok || len(servers) < 3 {
 		return fmt.Errorf("spec.servers must contain at least 3 entries")
 	}
 
-	// Validate each server
-	for _, server := range servers {
-		serverMap, ok := server.(map[string]interface{})
+	for _, s := range servers {
+		server, ok := s.(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("invalid server entry in spec.servers")
 		}
-
-		port := serverMap["port"].(map[string]interface{})
-		number := int(port["number"].(float64))
-		protocol := port["protocol"].(string)
-		tls := serverMap["tls"].(map[string]interface{})
+		port, ok := server["port"].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("port is not a map[string]interface{}")
+		}
+		number, err := getPortNumber(port["number"])
+		if err != nil {
+			return err
+		}
+		protocol, ok := port["protocol"].(string)
+		if !ok {
+			return fmt.Errorf("protocol is not a string")
+		}
 
 		switch number {
 		case 80:
@@ -283,25 +286,60 @@ func validateGatewaySpec(spec map[string]interface{}) error {
 				return fmt.Errorf("port 80 must use protocol http")
 			}
 		case 443:
-			if protocol != "HTTPS" && serverMap["tls"].(map[string]interface{})["mode"] != "SIMPLE" {
-				//	fmt.Errorf("port 443 must use protocol HTTPS with TLS mode SIMPLE")
-				return fmt.Errorf("port 443 must use protocol https with tls mode simple")
+			if protocol != "HTTPS" {
+				return fmt.Errorf("port 443 must use protocol https")
+			}
+			tls, err := getTLS(server)
+			if err != nil {
+				return fmt.Errorf("port 443: %v", err)
+			}
+			if tls["mode"] != "SIMPLE" {
+				return fmt.Errorf("port 443 must use tls mode simple")
 			}
 			if tls["credentialName"] != wildcardCredential {
-				//fmt.Errorf("port 443 must use the wildcard credential named %s", wildcardCredential)
 				return fmt.Errorf("port 443 must use the wildcard credential named %s", wildcardCredential)
 			}
 		case 15443:
-			if protocol != "HTTPS" && serverMap["tls"].(map[string]interface{})["mode"] != "PASSTHROUGH" {
-				//fmt.Errorf("port 15443 must use protocol HTTPS with TLS mode PASSTHROUGH")
-				return fmt.Errorf("port 15443 must use protocol https with tls mode passthrough")
+			if protocol != "HTTPS" {
+				return fmt.Errorf("port 15443 must use protocol https")
 			}
-		default:
-			continue
+			tls, err := getTLS(server)
+			if err != nil {
+				return fmt.Errorf("port 15443: %v", err)
+			}
+			if tls["mode"] != "PASSTHROUGH" {
+				return fmt.Errorf("port 15443 must use tls mode passthrough")
+			}
 		}
 	}
-
 	return nil
+}
+
+// getPortNumber safely extracts the port number as int
+func getPortNumber(val interface{}) (int, error) {
+	switch n := val.(type) {
+	case int:
+		return n, nil
+	case int64:
+		return int(n), nil
+	case float64:
+		return int(n), nil
+	default:
+		return 0, fmt.Errorf("port number is not a valid number type")
+	}
+}
+
+// getTLS safely extracts the tls map from a server entry
+func getTLS(server map[string]interface{}) (map[string]interface{}, error) {
+	tlsVal, ok := server["tls"]
+	if !ok || tlsVal == nil {
+		return nil, fmt.Errorf("must have tls configuration")
+	}
+	tls, ok := tlsVal.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("tls is not a map[string]interface{}")
+	}
+	return tls, nil
 }
 
 func labelCheckIstio(clientset *kubernetes.Clientset) error {
@@ -343,11 +381,11 @@ func checkSecret(clientset *kubernetes.Clientset) error {
 		return fmt.Errorf("kubernetes_web_expose_tls_secret_name environment variable is not set")
 	}
 	if ingressType == "ISTIO" {
-		secret, err := clientset.CoreV1().Secrets("istio-ingress").Get(context.TODO(), secretName, metav1.GetOptions{})
+		secret, err := clientset.CoreV1().Secrets("istio-system").Get(context.TODO(), secretName, metav1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to get secret %s in namespace instio-ingresss: %v", secretName, err)
 		}
-		fmt.Printf("\n[%s] Secret %s is found (%s) in namespace istio-ingress exists", time.Now().Format("2006-01-02 15:04:05"), secretName, secret.Name)
+		fmt.Printf("\n[%s] Secret %s is found (%s) in namespace istio-system exists", time.Now().Format("2006-01-02 15:04:05"), secretName, secret.Name)
 	}
 	if ingressType == "INGRESS" {
 		// Fetch the specific secret by name

@@ -387,7 +387,7 @@ func checkSecret(clientset *kubernetes.Clientset) error {
 		if err != nil {
 			return fmt.Errorf("failed to get secret %s in namespace instio-ingresss: %v", secretName, err)
 		}
-		fmt.Printf("\n[%s] Secret %s is found (%s) in namespace istio-system exists", time.Now().Format("2006-01-02 15:04:05"), secretName, secret.Name)
+		fmt.Printf("\n[%s][INFO] Secret %s is found (%s) in namespace istio-system", time.Now().Format("2006-01-02 15:04:05"), secretName, secret.Name)
 	}
 	if ingressType == "INGRESS" {
 		// Fetch the specific secret by name
@@ -395,7 +395,7 @@ func checkSecret(clientset *kubernetes.Clientset) error {
 		if err != nil {
 			return fmt.Errorf("failed to get secret %s in namespace %s: %v", secretName, workingNs, err)
 		}
-		fmt.Printf("\n[%s][INFO] Secret %s is found (%s) in namespace %s exists", time.Now().Format("2006-01-02 15:04:05"), secretName, secret.Name, workingNs)
+		fmt.Printf("\n[%s][INFO] Secret %s is found (%s) in namespace %s", time.Now().Format("2006-01-02 15:04:05"), secretName, secret.Name, workingNs)
 	}
 	return nil
 }

@@ -8,10 +8,25 @@ import (
 	"time"
 )
 
+func proxyHTTPClient() *http.Client {
+	httpProxy := os.Getenv("HTTP_PROXY")
+	httpsProxy := os.Getenv("HTTPS_PROXY")
+	noProxy := os.Getenv("NO_PROXY")
+	if httpProxy != "" || httpsProxy != "" {
+		fmt.Printf("\n[%s][INFO] Using proxy settings: HTTP_PROXY=%s, HTTPS_PROXY=%s, NO_PROXY=%s", time.Now().Format("2006-01-02 15:04:05"), httpProxy, httpsProxy, noProxy)
+		return &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+			},
+		}
+	}
+	return &http.Client{}
+}
+
 func (statusError *StatusError) networkCheckBlaze() {
 	//fmt.Println("Executing networkCheckBlaze...")
 	blazeNetworkCheck := []string{"https://a.blazemeter.com", "https://data.blazemeter.com", "https://mock.blazemeter.com", "https://auth.blazemeter.com", "https://storage.blazemeter.com", "https://bard.blazemeter.com"}
-	client := &http.Client{}
+	client := proxyHTTPClient()
 	for _, url := range blazeNetworkCheck {
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
@@ -48,7 +63,7 @@ func (statusError *StatusError) networkCheckImageRegistry() {
 	imageRegistryCheck := os.Getenv("DOCKER_REGISTRY")
 	imageRegistry := fmt.Sprintf("https://%s", imageRegistryCheck)
 
-	client := &http.Client{}
+	client := proxyHTTPClient()
 	req, err := http.NewRequest("GET", imageRegistry, nil)
 	if err != nil {
 		statusError.ImageRegistryNetworkStatus = err
@@ -79,7 +94,7 @@ func (statusError *StatusError) networkCheckImageRegistry() {
 func (statusError *StatusError) networkCheckThirdParty() {
 
 	thirdPartyNetworkCheck := []string{"https://pypi.org/", "https://storage.googleapis.com", "https://hub.docker.com", "https://index.docker.io"}
-	client := &http.Client{}
+	client := proxyHTTPClient()
 	for _, url := range thirdPartyNetworkCheck {
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {

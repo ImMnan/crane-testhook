@@ -46,13 +46,13 @@ func Execute(statusError *StatusError) {
 	cs.getClientSet()
 	//	statusError := &StatusError{}
 	fmt.Printf("\n[%s][INFO] Starting the requirements check...", time.Now().Format("2006-01-02 15:04:05"))
-	svEnabled := os.Getenv("SV_ENABLE")
+	svEnabled := os.Getenv("KUBERNETES_WEB_EXPOSE_TYPE")
 	statusError.networkCheckBlaze()
 	statusError.networkCheckImageRegistry()
 	statusError.networkCheckThirdParty()
 	statusError.listNodesDetails(cs)
 	statusError.rbacDefault(cs)
-	if svEnabled == "true" {
+	if svEnabled != "" {
 		statusError.checkIngress(cs)
 	}
 

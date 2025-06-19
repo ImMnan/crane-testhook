@@ -13,9 +13,9 @@ rm cranetest
 
 echo "Tagging and pushing Docker image..."
 
-docker tag cranetest immnan/cranetest:0.2.10
+docker tag cranetest immnan/cranetest:0.2.11
 docker tag cranetest immnan/cranetest:latest
-docker push immnan/cranetest:0.2.10
+docker push immnan/cranetest:0.2.11
 docker push immnan/cranetest:latest
 
 echo "Listing Docker images..."

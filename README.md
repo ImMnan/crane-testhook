@@ -12,7 +12,7 @@ A Kubernetes cluster requirements checker for Blazemeter Private Locations. This
 
 ## Prerequisites
 
-- Go 1.23+
+- Go 1.21+
 - Access to a Kubernetes cluster (with permissions to list nodes, roles, rolebindings, secrets, etc.)
 - Docker (for building container images)
 
@@ -56,10 +56,10 @@ This will automatically test the installation.
 
 ### As a Kubernetes Pod
 
-See [`kubernetes/teshook.yaml`](kubernetes/teshook.yaml) for an example manifest. Apply it with:
+See [`kubernetes/cranehook.yaml`](kubernetes/cranehook.yaml) for an example manifest. Apply it with:
 
 ```sh
-kubectl apply -f kubernetes/teshook.yaml
+kubectl apply -f kubernetes/cranehook.yaml
 ```
 
 

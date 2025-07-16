@@ -16,8 +16,8 @@ rules:
 - apiGroups: ["networking.istio.io"]
   resources: ["virtualservices", "destinationrules", "gateways", "serviceentries"]
   verbs: ["get", "list"]
-
 ---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -33,6 +33,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ---  
 
+# If istio-ingress is the ingress type 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -56,19 +57,18 @@ roleRef:
   kind: Role
   name: secret-reader
   apiGroup: rbac.authorization.k8s.io
-
 ---
 
 apiVersion: v1
 kind: Pod
 metadata:
-  name: cranetestpod
+  name: cranehook
   namespace: default
 spec:
   serviceAccountName: default
   automountServiceAccountToken: true
   containers:
-  - name: cranetestctr
+  - name: cranehook-ctr
     securityContext:
       runAsUser: 1337
       runAsGroup: 1337
@@ -76,22 +76,20 @@ spec:
       runAsNonRoot: true  
     env: 
     - name: WORKING_NAMESPACE
-      value: "default"
+      value: <namespace>
     - name: ROLE_NAME
-      value: "crane-s-role"
+      value: <role-name>
     - name: ROLE_BINDING_NAME
-      value: "crane-s-role-binding-default"
+      value: <role-binding-name>
     - name: SERVICE_ACCOUNT_NAME
-      value: "default"
-    - name: SV_ENABLE
-      value: "true"
+      value: <service-account-name>
     - name: KUBERNETES_WEB_EXPOSE_TYPE
-      value: "INGRESS"
+      value: <ingress-type>
     - name: DOCKER_REGISTRY
       value: "gcr.io/verdant-bulwark-278"  
     - name: KUBERNETES_WEB_EXPOSE_TLS_SECRET_NAME
-      value: "wildcard-credential1"
-    image: "immnan/cranetest:0.1.19"
+      value: <tls-secret-name>
+    image: "gcr.io/verdant-bulwark-278/cranehook:latest"
     imagePullPolicy: "Always"
     resources:
       requests:

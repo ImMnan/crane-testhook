@@ -83,8 +83,3 @@ The pod will run the checks and exit with code 0 if all requirements are met, or
 - `[error]` messages indicate failed checks
 - Exit code 0: all checks passed
 - Exit code 1: one or more checks failed (the logs would list the failures/errors)
-
-
-## License
-
-Apache 2.0. See [LICENSE](LICENSE).

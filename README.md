@@ -71,7 +71,6 @@ The pod will run the checks and exit with code 0 if all requirements are met, or
 - `ROLE_NAME`: Name of the Role to check
 - `ROLE_BINDING_NAME`: Name of the RoleBinding to check
 - `SERVICE_ACCOUNT_NAME`: ServiceAccount to check in the RoleBinding
-- `SV_ENABLE`: Set to `true` to enable ingress checks
 - `KUBERNETES_WEB_EXPOSE_TYPE`: `INGRESS` or `ISTIO`
 - `DOCKER_REGISTRY`: Docker registry URL to check
 - `KUBERNETES_WEB_EXPOSE_TLS_SECRET_NAME`: TLS secret name for ingress/istio

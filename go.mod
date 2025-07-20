@@ -1,4 +1,4 @@
-module github.com/immnan/crane-testhook
+module github.com/Blazemeter/crane-hook
 
 go 1.23.3
 

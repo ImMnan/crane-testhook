@@ -3,20 +3,20 @@ set -e
 
 echo "Setting Go environment variables and building binary..."
 go env -w GOOS=linux GOARCH=amd64
-go build -o cranetest ../.
+go build -o cranehook .
 
 echo "Building Docker image..."
-docker build -t cranetest .
+docker build -t cranehook .
 
 echo "Cleaning up local binary..."
-rm cranetest
+rm cranehook
 
 echo "Tagging and pushing Docker image..."
 
-docker tag cranetest immnan/cranetest:0.2.11
-docker tag cranetest immnan/cranetest:latest
-docker push immnan/cranetest:0.2.11
-docker push immnan/cranetest:latest
+docker tag cranehook immnan/cranehook:1.1.0
+docker tag cranehook immnan/cranehook:latest
+docker push immnan/cranehook:1.1.0
+docker push immnan/cranehook:latest
 
 echo "Listing Docker images..."
 docker images

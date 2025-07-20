@@ -1,6 +1,6 @@
 # crane-testhook
 
-A Kubernetes cluster requirements checker for Blazemeter Private Locations. This tool verifies node resources, network connectivity, RBAC, and ingress configuration to ensure your cluster is ready to deploy Blazemeter workloads.
+A Kubernetes cluster requirements checker for Blazemeter Private Locations. This tool verifies node resources, network connectivity, RBAC, and ingress configuration to ensure your cluster is ready to deploy Blazemeter workloads
 
 ## Features
 
@@ -22,27 +22,8 @@ To build the binary for Linux/amd64:
 
 ```sh
 go env -w GOOS=linux GOARCH=amd64
-go build -o cranetest .
+go build -o cranehook .
 ```
-
-Or use the provided build script and Dockerfile:
-
-```sh
-cd containerImage
-./build.sh
-```
-
-## Docker
-
-Build and push the Docker image:
-
-```sh
-cd containerImage
-./build.sh
-```
-
-This will build the binary, create a Docker image, and push it to Docker Hub as `immnan/cranetest`.
-You can replace the image repository to your private registry on cloud, if required. 
 
 ## Usage
 
@@ -56,14 +37,16 @@ This will automatically test the installation.
 
 ### As a Kubernetes Pod
 
-See [`kubernetes/teshook.yaml`](kubernetes/teshook.yaml) for an example manifest. Apply it with:
+See [`kubernetes/cranehook.yaml`](kubernetes/cranehook.yaml) for an example manifest. Apply it with:
 
 ```sh
-kubectl apply -f kubernetes/teshook.yaml
+kubectl apply -f kubernetes/cranehook.yaml
 ```
 
-
 The pod will run the checks and exit with code 0 if all requirements are met, or 1 if any check fails.
+
+**NOTE**
+- If you deploy crane-hook manually, with `kubectl apply` method, make sure the environment variables are set correctly as per the type of crane installation. See Environment Variables below.
 
 ## Environment Variables
 
@@ -84,8 +67,3 @@ The pod will run the checks and exit with code 0 if all requirements are met, or
 - `[error]` messages indicate failed checks
 - Exit code 0: all checks passed
 - Exit code 1: one or more checks failed (the logs would list the failures/errors)
-
-
-## License
-
-Apache 2.0. See [LICENSE](LICENSE).

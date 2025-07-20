@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/immnan/crane-testhook/pkg"
+	"github.com/Blazemeter/crane-hook/pkg"
 )
 
 func main() {

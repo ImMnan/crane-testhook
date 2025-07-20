@@ -99,6 +99,12 @@ func Consolidation(statusErr *StatusError) error {
 	if statusErr.IngressStatus != nil {
 		return errors.New("requirements check failed, check errors in logs")
 	}
+
+	// Check RBAC requirements
+	if statusErr.RBAC != nil {
+		return errors.New("requirements check failed, check errors in logs")
+	}
+
 	return nil
 }
 
